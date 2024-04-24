@@ -7,35 +7,6 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace TestOireachtasAPI
 {
     [TestClass]
-    public class LoadDatasetTest
-    {
-        dynamic expected;
-        [TestInitialize]
-        public void SetUp()
-        {
-            using (StreamReader r = new StreamReader(OireachtasAPI.Program.MEMBERS_DATASET))
-            {
-                string json = r.ReadToEnd();
-                expected = JsonConvert.DeserializeObject(json);
-            }
-        }
-        [TestMethod]
-        public void TestLoadFromFile()
-        {
-            dynamic loaded = OireachtasAPI.Program.load(OireachtasAPI.Program.MEMBERS_DATASET);
-            Assert.AreEqual(loaded["results"].Count, expected["results"].Count);
-
-        }
-
-        [TestMethod]
-        public void TestLoadFromUrl()
-        {
-            dynamic loaded = OireachtasAPI.Program.load("https://api.oireachtas.ie/v1/members?limit=50");
-            Assert.AreEqual(loaded["results"].Count, expected["results"].Count);
-
-        }
-    }
-    [TestClass]
     public class FilterBillsSponsoredByTest
     {
         [TestMethod]

@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using OireachtasAPI.DataLoaders;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,8 +18,6 @@ namespace OireachtasAPI
 
         }
 
-        public static Func<string, dynamic> load = jfname => JsonConvert.DeserializeObject((new System.IO.StreamReader(jfname)).ReadToEnd());
-
         /// <summary>
         /// Return bills sponsored by the member with the specified pId
         /// </summary>
@@ -26,8 +25,10 @@ namespace OireachtasAPI
         /// <returns>List of bill records</returns>
         public static List<dynamic> filterBillsSponsoredBy(string pId)
         {
-            dynamic leg = load(LEGISLATION_DATASET);
-            dynamic mem = load(MEMBERS_DATASET);
+            FileDataLoader fileDataLoader = new FileDataLoader();
+
+            dynamic leg = fileDataLoader.Load(LEGISLATION_DATASET);
+            dynamic mem = fileDataLoader.Load(MEMBERS_DATASET);
 
             List<dynamic> ret = new List<dynamic>();
 
