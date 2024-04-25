@@ -3,23 +3,23 @@ using System.IO;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using OireachtasAPI.Services;
+using OireachtasAPI.DataLoaders;
 
-namespace TestOireachtasAPI
+namespace TestOireachtasAPI.ServicesTests
 {
     [TestClass]
-    public class FilterBillsSponsoredByTest
+    public class OireachtasServiceTests
     {
         [TestMethod]
         public void TestSponsor()
         {
-            List<dynamic> results = OireachtasAPI.Program.filterBillsSponsoredBy("IvanaBacik");
-            Assert.IsTrue(results.Count>=2);
+            FileDataLoader fileDataLoader = new FileDataLoader();
+            OireachtasService oireachtasService = new OireachtasService(fileDataLoader);
+            List<dynamic> results = oireachtasService.FilterBillsSponsoredBy("IvanaBacik");
+            Assert.IsTrue(results.Count >= 2);
         }
-    }
-
-    [TestClass]
-    public class FilterBillsByLastUpdatedTest
-    {
+   
         [TestMethod]
         public void Testlastupdated()
         {
@@ -32,7 +32,9 @@ namespace TestOireachtasAPI
             DateTime since = new DateTime(2018, 12, 1);
             DateTime until = new DateTime(2019, 1, 1);
 
-            foreach (dynamic bill in OireachtasAPI.Program.filterBillsByLastUpdated(since, until))
+            FileDataLoader fileDataLoader = new FileDataLoader();
+            OireachtasService oireachtasService = new OireachtasService(fileDataLoader);
+            foreach (dynamic bill in oireachtasService.FilterBillsByLastUpdated(since, until))
             {
                 received.Add(bill["billNo"].ToString());
             }

@@ -9,7 +9,7 @@ namespace OireachtasAPI.DataLoaders
     /// <summary>
     /// Interface for data loaders.
     /// </summary>
-    internal interface IDataLoader
+    public interface IDataLoader
     {
         /// <summary>
         /// Loads data from the specified source.
