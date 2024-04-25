@@ -49,6 +49,7 @@
     <Compile Include="DataLoaders\FileDataLoader.cs" />
     <Compile Include="DataLoaders\IDataLoader.cs" />
     <Compile Include="DataLoaders\HttpDataLoader.cs" />
+    <Compile Include="Enums\FilterType.cs" />
     <Compile Include="Factories\DataLoaderFactory.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
