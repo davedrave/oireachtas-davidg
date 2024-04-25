@@ -1,10 +1,6 @@
-﻿using Newtonsoft.Json;
-using OireachtasAPI.DataLoaders;
+﻿using OireachtasAPI.DataLoaders;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OireachtasAPI
 {
@@ -59,7 +55,22 @@ namespace OireachtasAPI
         /// <returns>List of bill records</returns>
         public static List<dynamic> filterBillsByLastUpdated(DateTime since, DateTime until)
         {
-            throw new NotImplementedException();
+            FileDataLoader fileDataLoader = new FileDataLoader();
+
+            dynamic leg = fileDataLoader.Load(LEGISLATION_DATASET);
+
+            List<dynamic> ret = new List<dynamic>();
+
+            foreach (dynamic res in leg["results"])
+            {
+                dynamic p = res["bill"];
+
+                if (p["lastUpdated"] > since && p["lastUpdated"] < until)
+                {
+                    ret.Add(p);
+                }
+            }
+            return ret;
         }
     }
 }

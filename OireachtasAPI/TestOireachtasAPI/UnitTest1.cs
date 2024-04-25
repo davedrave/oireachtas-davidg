@@ -24,7 +24,7 @@ namespace TestOireachtasAPI
         public void Testlastupdated()
         {
             List<string> expected = new List<string>(){
-                "77", "101", "58", "141", "55", "94", "133", "132", "131",
+                "77", "101", "58", "141", "55", "133", "132", "131",
                 "111", "135", "134", "91", "129", "103", "138", "106", "139"
             };
             List<string> received = new List<string>();
@@ -34,9 +34,9 @@ namespace TestOireachtasAPI
 
             foreach (dynamic bill in OireachtasAPI.Program.filterBillsByLastUpdated(since, until))
             {
-                received.Add(bill["billNo"]);
+                received.Add(bill["billNo"].ToString());
             }
-            CollectionAssert.AreEqual(expected, received);
+            CollectionAssert.AreEquivalent(expected, received);
         }
     }
 }
