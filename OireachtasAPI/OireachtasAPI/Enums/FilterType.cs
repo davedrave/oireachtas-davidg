@@ -5,7 +5,7 @@
     /// </summary>
     public enum FilterType
     {
-        FilterBillsSponsoredBy,
-        FilterBillsLastUpdated
+        FilterBillsSponsoredBy = 1,
+        FilterBillsLastUpdated = 2,
     }
 }

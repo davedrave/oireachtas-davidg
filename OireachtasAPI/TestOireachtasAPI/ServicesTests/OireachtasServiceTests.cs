@@ -5,6 +5,8 @@ using Newtonsoft.Json;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OireachtasAPI.Services;
 using OireachtasAPI.DataLoaders;
+using OireachtasAPI.Repositories;
+using OireachtasAPI.Settings;
 
 namespace TestOireachtasAPI.ServicesTests
 {
@@ -15,7 +17,8 @@ namespace TestOireachtasAPI.ServicesTests
         public void TestSponsor()
         {
             FileDataLoader fileDataLoader = new FileDataLoader();
-            OireachtasService oireachtasService = new OireachtasService(fileDataLoader);
+            OireachtasRepository repository = new OireachtasRepository(fileDataLoader, DataPaths.LocalLegislation, DataPaths.LocalMembers);
+            OireachtasService oireachtasService = new OireachtasService(repository);
             List<dynamic> results = oireachtasService.FilterBillsSponsoredBy("IvanaBacik");
             Assert.IsTrue(results.Count >= 2);
         }
@@ -33,7 +36,8 @@ namespace TestOireachtasAPI.ServicesTests
             DateTime until = new DateTime(2019, 1, 1);
 
             FileDataLoader fileDataLoader = new FileDataLoader();
-            OireachtasService oireachtasService = new OireachtasService(fileDataLoader);
+            OireachtasRepository repository = new OireachtasRepository(fileDataLoader, DataPaths.LocalLegislation, DataPaths.LocalMembers);
+            OireachtasService oireachtasService = new OireachtasService(repository);
             foreach (dynamic bill in oireachtasService.FilterBillsByLastUpdated(since, until))
             {
                 received.Add(bill["billNo"].ToString());

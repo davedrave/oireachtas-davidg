@@ -1,6 +1,7 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
 using OireachtasAPI.DataLoaders;
+using OireachtasAPI.Settings;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -27,7 +28,7 @@ namespace TestOireachtasAPI.DataLoaderTests
         [TestInitialize]
         public void SetUp()
         {
-            using (StreamReader r = new StreamReader(OireachtasAPI.Program.MEMBERS_DATASET))
+            using (StreamReader r = new StreamReader(DataPaths.LocalMembers))
             {
                 string json = r.ReadToEnd();
                 expected = JsonConvert.DeserializeObject(json);
@@ -44,7 +45,7 @@ namespace TestOireachtasAPI.DataLoaderTests
 
 
             //TODO need to revise validation criteria here as a count comparison isnt a true test of validity
-            dynamic loaded = fileDataLoader.Load("https://api.oireachtas.ie/v1/members?limit=50");
+            dynamic loaded = fileDataLoader.Load(DataPaths.ApiMembers);
             Assert.AreEqual(loaded["results"].Count, expected["results"].Count);
         }
 

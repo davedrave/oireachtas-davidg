@@ -1,4 +1,4 @@
-﻿using OireachtasAPI.DataLoaders;
+﻿using OireachtasAPI.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,11 +9,11 @@ namespace OireachtasAPI.Services
 {
     public class OireachtasService
     {
-        private readonly IDataLoader dataLoader;
+        private readonly IOireachtasRepository repository;
 
-        public OireachtasService(IDataLoader dataLoader)
+        public OireachtasService(IOireachtasRepository repository)
         {
-            this.dataLoader = dataLoader;
+            this.repository = repository;
         }
 
         /// <summary>
@@ -23,8 +23,8 @@ namespace OireachtasAPI.Services
         /// <returns>List of bill records</returns>
         public List<dynamic> FilterBillsSponsoredBy(string pId)
         {
-            dynamic leg = this.dataLoader.Load(OireachtasAPI.Program.LEGISLATION_DATASET);
-            dynamic mem = this.dataLoader.Load(OireachtasAPI.Program.MEMBERS_DATASET);
+            dynamic leg = this.repository.GetLegislationData();
+            dynamic mem = this.repository.GetMembersData();
 
             List<dynamic> ret = new List<dynamic>();
 
@@ -56,7 +56,7 @@ namespace OireachtasAPI.Services
         /// <returns>List of bill records</returns>
         public List<dynamic> FilterBillsByLastUpdated(DateTime since, DateTime until)
         {
-            dynamic leg = this.dataLoader.Load(OireachtasAPI.Program.LEGISLATION_DATASET);
+            dynamic leg = this.repository.GetLegislationData();
 
             List<dynamic> ret = new List<dynamic>();
 
