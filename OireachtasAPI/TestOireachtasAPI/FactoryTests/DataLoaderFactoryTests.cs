@@ -1,6 +1,11 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
 using OireachtasAPI.DataLoaders;
 using OireachtasAPI.Factories;
+using OireachtasAPI.Repositories;
+using OireachtasAPI.Services;
+using OireachtasAPI.Settings;
+using Serilog;
 using System;
 
 namespace TestOireachtasAPI.FactoryTests
@@ -11,6 +16,15 @@ namespace TestOireachtasAPI.FactoryTests
     [TestClass]
     public class DataLoaderFactoryTests
     {
+        private ILogger logger;
+
+        [TestInitialize]
+        public void Initialize()
+        {
+            Mock<ILogger> mock = new Mock<ILogger>();
+            this.logger = mock.Object;
+        }
+
         /// <summary>
         /// Verifies that when provided with an HTTP URL, the DataLoaderFactory correctly returns an instance of <see cref="HttpDataLoader"/>.
         /// </summary>
@@ -21,7 +35,7 @@ namespace TestOireachtasAPI.FactoryTests
             string url = "https://api.somewebsite.ie/v1/members?limit=50";
 
             // Act
-            var loader = DataLoaderFactory.GetLoader(url);
+            var loader = new DataLoaderFactory(this.logger).GetLoader(url);
 
             // Assert
             Assert.IsInstanceOfType(loader, typeof(HttpDataLoader));
@@ -34,10 +48,12 @@ namespace TestOireachtasAPI.FactoryTests
         public void GetLoader_WithFilePath_ReturnsFileDataLoader()
         {
             // Arrange
+            string url = "https://api.somewebsite.ie/v1/members?limit=50";
             string filePath = "path/to/local/file.json";
 
+
             // Act
-            var loader = DataLoaderFactory.GetLoader(filePath);
+            var loader = new DataLoaderFactory(this.logger).GetLoader(filePath);
 
             // Assert
             Assert.IsInstanceOfType(loader, typeof(FileDataLoader));
@@ -49,7 +65,12 @@ namespace TestOireachtasAPI.FactoryTests
         [TestMethod]
         public void GetLoader_WithNull_ThrowsArgumentException()
         {
-            Assert.ThrowsException<ArgumentNullException>(() => DataLoaderFactory.GetLoader(null));
+            //Arrange
+            string url = "https://api.somewebsite.ie/v1/members?limit=50";
+            DataLoaderFactory factory = new DataLoaderFactory(this.logger);
+
+            //Act & Assert
+            Assert.ThrowsException<ArgumentNullException>(() => factory.GetLoader(null));
         }
 
         /// <summary>
@@ -58,7 +79,12 @@ namespace TestOireachtasAPI.FactoryTests
         [TestMethod]
         public void GetLoader_WithEmptyString_ThrowsArgumentException()
         {
-            Assert.ThrowsException<ArgumentException>(() => DataLoaderFactory.GetLoader(string.Empty));
+            //Arrange
+            string url = "https://api.somewebsite.ie/v1/members?limit=50";
+            DataLoaderFactory factory = new DataLoaderFactory(this.logger);
+
+            //Act & Assert
+            Assert.ThrowsException<ArgumentException>(() => factory.GetLoader(string.Empty));
         }
     }
 }

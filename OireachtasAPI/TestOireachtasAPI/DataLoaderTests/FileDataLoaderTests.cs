@@ -1,7 +1,9 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
 using Newtonsoft.Json;
 using OireachtasAPI.DataLoaders;
 using OireachtasAPI.Settings;
+using Serilog;
 using System;
 using System.IO;
 
@@ -37,10 +39,17 @@ namespace TestOireachtasAPI.DataLoaderTests
         [TestMethod]
         public void Load_ValidFile_LoadsValidData()
         {
-            FileDataLoader fileDataLoader = new FileDataLoader();
+            //Arrange
+            Mock<ILogger> mock = new Mock<ILogger>();
+            ILogger logger = mock.Object;
 
+            FileDataLoader fileDataLoader = new FileDataLoader(logger);
+
+            //Act
             //TODO need to revise validation criteria here as a count comparison isnt a true test of validity
             dynamic loaded = fileDataLoader.Load(DataPaths.LocalMembers);
+            
+            //Assert
             Assert.AreEqual(loaded["results"].Count, expected["results"].Count);
         }
     }

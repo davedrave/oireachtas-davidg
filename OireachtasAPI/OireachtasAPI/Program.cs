@@ -9,6 +9,7 @@ using OireachtasAPI.Repositories;
 using OireachtasAPI.DataLoaders;
 using Newtonsoft.Json;
 using System.ComponentModel;
+using Serilog;
 
 namespace OireachtasAPI
 {
@@ -36,196 +37,228 @@ namespace OireachtasAPI
 
         static void Main(string[] args)
         {
-            if (args.Length == 0)
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Debug()  // Set the minimum log level to Debug for all sinks
+                .WriteTo.Console()     // Add console sink
+                .WriteTo.Async(a => a.File("logs/OireachtasAPI.txt", rollingInterval: RollingInterval.Hour))
+                .CreateLogger();
+
+            try
             {
-                Console.WriteLine("Parameters not provided, choose your parameters");
+                Log.Information("Starting application");
 
-                int value = 0;
-                SourceType source = SourceType.Local;
-                while (value != 1 && value != 2)
+                if (args.Length == 0)
                 {
-                    Console.WriteLine($"Choose the data souce:\n 1 for {SourceType.Local}, 2 for {SourceType.Api}:");
-                    string result = Console.ReadKey().KeyChar.ToString();
-                    if (!int.TryParse(result, out value) || value != 1 && value != 2)
+                    Console.WriteLine("Parameters not provided, choose your parameters");
+                    Log.Information("Parameters not provided");
+                    int value = 0;
+                    SourceType source = SourceType.Local;
+                    while (value != 1 && value != 2)
                     {
-                        Console.WriteLine("\nInvalid choice.");
-                    }
-                    else
-                    {
-                        source = (SourceType)value;
-                    }
-                }
-
-                //Have to assign something.
-                FilterType filterType = FilterType.FilterBillsSponsoredBy;
-                value = 0;
-                while (value != 1 && value != 2)
-                {
-                    Console.WriteLine($"\nChoose the filter.\n 1 for {FilterType.FilterBillsSponsoredBy}, 2 for {FilterType.FilterBillsLastUpdated}:");
-                    string result = Console.ReadKey().KeyChar.ToString();
-                    if (!int.TryParse(result, out value) || value != 1 && value != 2)
-                    {
-                        Console.WriteLine("\nInvalid choice.");
-                    }
-                    else
-                    {
-                        filterType = (FilterType)value;
-                    }
-                }
-
-                OireachtasService service = InitialiseService(source);
-
-                if (filterType == FilterType.FilterBillsSponsoredBy)
-                {
-                    string memberId = string.Empty;
-
-                    while (memberId == string.Empty)
-                    {
-                        Console.WriteLine("\nPlease supply a Member Name to filter by. This cannot be blank");
-                        memberId = Console.ReadLine();
-                    }
-                                       
-                    //TODO Exception 
-                    var result = service.FilterBillsSponsoredBy(memberId);
-                    PrintResult(result);
-                }
-                else if (filterType == FilterType.FilterBillsLastUpdated)
-                {
-                    //use maxvalue as null to avoid a temp DateTime value with tryparse.
-                    DateTime dateFrom = DateTime.MaxValue;
-                    while (dateFrom == DateTime.MaxValue)
-                    {
-                        Console.WriteLine("\nPlease supply a Date to filter from. Leaving this blank can result in Bills from the beginning of time being included.");
-                        string date = Console.ReadLine();
-
-                        if (!string.IsNullOrEmpty(date))
+                        Console.WriteLine($"Choose the data souce:\n 1 for {SourceType.Local}, 2 for {SourceType.Api}:");
+                        string result = Console.ReadKey().KeyChar.ToString();
+                        if (!int.TryParse(result, out value) || value != 1 && value != 2)
                         {
-                            if (!DateTime.TryParse(date, out dateFrom))
-                            {
-                                Console.WriteLine($"Invalid Date format. Provide date in format {cultureInfo.DateTimeFormat}");
-                            }
+                            Console.WriteLine("\nInvalid choice.");
+                            
                         }
                         else
                         {
-                            Console.WriteLine("DateFrom bypassed.");
-                            dateFrom = DateTime.MinValue;
+                            source = (SourceType)value;
                         }
                     }
 
-                    DateTime dateTo = DateTime.MaxValue;
-                    while (dateTo == DateTime.MaxValue)
+                    //Have to assign something.
+                    FilterType filterType = FilterType.FilterBillsSponsoredBy;
+                    value = 0;
+                    while (value != 1 && value != 2)
                     {
-                        Console.WriteLine("\nPlease supply a Date to filter until. Leaving this blank will include bills up to todays date.");
-                        string date = Console.ReadLine();
-
-                        if (!string.IsNullOrEmpty(date))
+                        Console.WriteLine($"\nChoose the filter.\n 1 for {FilterType.FilterBillsSponsoredBy}, 2 for {FilterType.FilterBillsLastUpdated}:");
+                        string result = Console.ReadKey().KeyChar.ToString();
+                        if (!int.TryParse(result, out value) || value != 1 && value != 2)
                         {
-                            if (!DateTime.TryParse(date, out dateTo))
-                            {
-                                Console.WriteLine($"Invalid Date format. Provide date in format {cultureInfo.DateTimeFormat}");
-                            }
+                            Console.WriteLine("\nInvalid choice.");
                         }
                         else
                         {
-                            Console.WriteLine("DateTo bypassed.");
-                            dateTo = DateTime.Today;
+                            filterType = (FilterType)value;
                         }
                     }
 
-                    //TODO Exception 
-                    var result = service.FilterBillsByLastUpdated(dateFrom, dateTo);
-                    PrintResult(result);
-                }
+                    OireachtasService service = InitialiseService(source);
 
-                Console.WriteLine("Parameters not provided, choose your parameters");
-            }
-            else
-            {
-                Parser.Default.ParseArguments<Options>(args)
-                .WithParsed(parameters =>
-                {
-                    OireachtasService service = InitialiseService(parameters.SourceType);
-
-                    if (parameters.FilterType == FilterType.FilterBillsSponsoredBy)
+                    if (filterType == FilterType.FilterBillsSponsoredBy)
                     {
-                        if (parameters.MemberId == null)
-                        {
-                            throw new ArgumentException("Parameter must not be null or empty for FilterBillsSponsoredBy");
-                        }
-                        else
-                        {
-                            Console.WriteLine($"Filtering Bills by Sponsor: {parameters.MemberId}");
-                            //TODO Exception 
-                            List<dynamic> result = service.FilterBillsSponsoredBy(parameters.MemberId);
-                            PrintResult(result);
-                        }
-                    }
-                    else if (parameters.FilterType == FilterType.FilterBillsLastUpdated)
-                    {
-                        /*Make dateparameters robust by defaulting to extremes if explicit value not provided
-                         * E.G no dateUntil will result in including everything up to current date
-                         * */
-                        if (!DateTime.TryParse(parameters.DateFrom, cultureInfo, DateTimeStyles.None, out DateTime dateFrom))
-                        {
-                            dateFrom = DateTime.MinValue;
-                        }
+                        string memberId = string.Empty;
 
-                        if (!DateTime.TryParse(parameters.DateUntil, cultureInfo, DateTimeStyles.None, out DateTime dateUntil))
+                        while (memberId == string.Empty)
                         {
-                            dateUntil = DateTime.Today;
+                            Console.WriteLine("\nPlease supply a Member Name to filter by. This cannot be blank");
+                            memberId = Console.ReadLine();
                         }
 
                         //TODO Exception 
-                        var result = service.FilterBillsByLastUpdated(dateFrom, dateUntil);
+                        var result = service.FilterBillsSponsoredBy(memberId);
                         PrintResult(result);
                     }
-                    else
+                    else if (filterType == FilterType.FilterBillsLastUpdated)
                     {
-                        // should not get here unless an additional enum is added to FilterTypes without updating this area.
-                        throw new InvalidEnumArgumentException();
-                    }
-                })
-                .WithNotParsed(errors =>
-                {
-                    // Handle parsing errors
-                    foreach (Error error in errors)
-                    {
-                        Console.WriteLine(error);
-                    }
-                });
-            }
+                        //use maxvalue as null to avoid a temp DateTime value with tryparse.
+                        DateTime dateFrom = DateTime.MaxValue;
+                        while (dateFrom == DateTime.MaxValue)
+                        {
+                            Console.WriteLine("\nPlease supply a Date to filter from. Leaving this blank can result in Bills from the beginning of time being included.");
+                            string date = Console.ReadLine();
 
-            Console.WriteLine("Press any button to quit.");
-            Console.ReadKey();
+                            if (!string.IsNullOrEmpty(date))
+                            {
+                                if (!DateTime.TryParse(date, out dateFrom))
+                                {
+                                    Console.WriteLine($"Invalid Date format. Provide date in format {cultureInfo.DateTimeFormat}");
+                                }
+                            }
+                            else
+                            {
+                                Console.WriteLine("DateFrom bypassed.");
+                                dateFrom = DateTime.MinValue;
+                            }
+                        }
 
-            void PrintResult(List<dynamic> toPrint)
-            {
-                if (toPrint == null || toPrint.Count == 0)
-                {
-                    Console.WriteLine("Results null or empty!");
+                        DateTime dateTo = DateTime.MaxValue;
+                        while (dateTo == DateTime.MaxValue)
+                        {
+                            Console.WriteLine("\nPlease supply a Date to filter until. Leaving this blank will include bills up to todays date.");
+                            string date = Console.ReadLine();
+
+                            if (!string.IsNullOrEmpty(date))
+                            {
+                                if (!DateTime.TryParse(date, out dateTo))
+                                {
+                                    Console.WriteLine($"Invalid Date format. Provide date in format {cultureInfo.DateTimeFormat}");
+                                }
+                            }
+                            else
+                            {
+                                Console.WriteLine("DateTo bypassed.");
+                                dateTo = DateTime.Today;
+                            }
+                        }
+
+                        //TODO Exception 
+                        var result = service.FilterBillsByLastUpdated(dateFrom, dateTo);
+                        PrintResult(result);
+                        Log.Information("Result Printed.");
+                    }
+
+                    Console.WriteLine("Parameters not provided, choose your parameters");
                 }
                 else
                 {
-
-
-                    foreach (dynamic p in toPrint)
+                    Log.Information("Parameters Provided and validated at a basic level by Parser.");
+                    Parser.Default.ParseArguments<Options>(args)
+                    .WithParsed(parameters =>
                     {
-                        string prettyJson = JsonConvert.SerializeObject(p, Formatting.Indented);
-                        Console.WriteLine(prettyJson);
+                        OireachtasService service = InitialiseService(parameters.SourceType);
+
+                        if (parameters.FilterType == FilterType.FilterBillsSponsoredBy)
+                        {
+                            if (parameters.MemberId == null)
+                            {
+                                Log.Fatal("User failed to provide correct parameter for {FilterType.FilterBillsSponsoredBy}", FilterType.FilterBillsSponsoredBy);
+
+                                throw new ArgumentException("Parameter must not be null or empty for FilterBillsSponsoredBy");
+                            }
+                            else
+                            {
+                                Console.WriteLine($"Filtering Bills by Sponsor: {parameters.MemberId}");
+                                //TODO Exception 
+                                List<dynamic> result = service.FilterBillsSponsoredBy(parameters.MemberId);
+                                PrintResult(result);
+                            }
+                        }
+                        else if (parameters.FilterType == FilterType.FilterBillsLastUpdated)
+                        {
+                            /*Make dateparameters robust by defaulting to extremes if explicit value not provided
+                             * E.G no dateUntil will result in including everything up to current date
+                             * */
+                            if (!DateTime.TryParse(parameters.DateFrom, cultureInfo, DateTimeStyles.None, out DateTime dateFrom))
+                            {
+                                dateFrom = DateTime.MinValue;
+                                Log.Warning($"{nameof(dateFrom)} parameter has been set to MinValue.");
+                            }
+
+                            if (!DateTime.TryParse(parameters.DateUntil, cultureInfo, DateTimeStyles.None, out DateTime dateUntil))
+                            {
+                                dateUntil = DateTime.Today;
+                                Log.Warning($"{nameof(dateUntil)} parameter has been set to Today.");
+                            }
+
+                            //TODO Exception 
+                            var result = service.FilterBillsByLastUpdated(dateFrom, dateUntil);
+                            PrintResult(result);
+                        }
+                        else
+                        {
+                            // should not get here unless an additional enum is added to FilterTypes without updating this area.
+                            throw new InvalidEnumArgumentException();
+                        }
+                    })
+                    .WithNotParsed(errors =>
+                    {
+                        // Handle parsing errors
+                        foreach (Error error in errors)
+                        {
+                            Console.WriteLine(error);
+                        }
+                    });
+                }
+
+                Console.WriteLine("Press any button to quit.");
+                Console.ReadKey();
+
+                void PrintResult(List<dynamic> toPrint)
+                {
+                    if (toPrint == null || toPrint.Count == 0)
+                    {
+                        Console.WriteLine("Results null or empty!");
+                    }
+                    else
+                    {
+
+
+                        foreach (dynamic p in toPrint)
+                        {
+                            string prettyJson = JsonConvert.SerializeObject(p, Formatting.Indented);
+                            Console.WriteLine(prettyJson);
+                        }
                     }
                 }
+
+                //Initialise the OireachtasService with dependencies based on if the source is api or local.
+                OireachtasService InitialiseService(SourceType sourceType)
+                {
+                    Log.Information("Initialising Oireachtas Service.");
+                    string legislationPath = sourceType == SourceType.Local ? Settings.DataPaths.LocalLegislation : Settings.DataPaths.ApiLegislation;
+                    string membersPath = sourceType == SourceType.Local ? Settings.DataPaths.LocalMembers : Settings.DataPaths.ApiMembers;
+
+                    ILogger logger = new LoggerConfiguration()
+                        .MinimumLevel.Debug()
+                        .WriteTo.Async(a => a.File("logs/OireachtasAPI.txt", rollingInterval: RollingInterval.Hour))
+                        .CreateLogger();
+
+                    IDataLoader dataLoader = new DataLoaderFactory(logger).GetLoader(legislationPath);
+                    IOireachtasRepository repository = new OireachtasRepository(dataLoader, logger, legislationPath, membersPath);
+
+                    return new OireachtasService(repository, logger);
+                }
             }
-
-            //Initialise the OireachtasService with dependencies based on if the source is api or local.
-            OireachtasService InitialiseService(SourceType sourceType)
+            catch (Exception ex)
             {
-                string legislationPath = sourceType == SourceType.Local ? Settings.DataPaths.LocalLegislation : Settings.DataPaths.ApiLegislation;
-                string membersPath = sourceType == SourceType.Local ? Settings.DataPaths.LocalMembers : Settings.DataPaths.ApiMembers;
-
-                IDataLoader dataLoader = DataLoaderFactory.GetLoader(legislationPath);
-                IOireachtasRepository repository = new OireachtasRepository(dataLoader, legislationPath, membersPath);
-
-                return new OireachtasService(repository);
+                Log.Fatal(ex, "An unhandled exception occurred.");
+            }
+            finally
+            {
+                Log.CloseAndFlush();
             }
         }
     }

@@ -7,24 +7,36 @@ using OireachtasAPI.Services;
 using OireachtasAPI.DataLoaders;
 using OireachtasAPI.Repositories;
 using OireachtasAPI.Settings;
+using Moq;
+using Serilog;
 
 namespace TestOireachtasAPI.ServicesTests
 {
     [TestClass]
     public class OireachtasServiceTests
     {
-        [TestMethod]
-        public void TestSponsor()
+        private OireachtasService oireachtasService;
+
+        [TestInitialize]
+        public void Initialize()
         {
-            FileDataLoader fileDataLoader = new FileDataLoader();
-            OireachtasRepository repository = new OireachtasRepository(fileDataLoader, DataPaths.LocalLegislation, DataPaths.LocalMembers);
-            OireachtasService oireachtasService = new OireachtasService(repository);
-            List<dynamic> results = oireachtasService.FilterBillsSponsoredBy("IvanaBacik");
+            Mock<ILogger> mock = new Mock<ILogger>();
+            ILogger logger = mock.Object;
+
+            FileDataLoader fileDataLoader = new FileDataLoader(logger);
+            OireachtasRepository repository = new OireachtasRepository(fileDataLoader, logger, DataPaths.LocalLegislation, DataPaths.LocalMembers);
+            this.oireachtasService = new OireachtasService(repository, logger);
+        }
+
+            [TestMethod]
+        public void FilterBillsSponsoredBy_ExistingMember_DataReturned()
+        {
+            List<dynamic> results = this.oireachtasService.FilterBillsSponsoredBy("IvanaBacik");
             Assert.IsTrue(results.Count >= 2);
         }
    
         [TestMethod]
-        public void Testlastupdated()
+        public void FilterBillsByLastUpdated_ValidRange_DataReturned()
         {
             List<string> expected = new List<string>(){
                 "77", "101", "58", "141", "55", "133", "132", "131",
@@ -35,10 +47,7 @@ namespace TestOireachtasAPI.ServicesTests
             DateTime since = new DateTime(2018, 12, 1);
             DateTime until = new DateTime(2019, 1, 1);
 
-            FileDataLoader fileDataLoader = new FileDataLoader();
-            OireachtasRepository repository = new OireachtasRepository(fileDataLoader, DataPaths.LocalLegislation, DataPaths.LocalMembers);
-            OireachtasService oireachtasService = new OireachtasService(repository);
-            foreach (dynamic bill in oireachtasService.FilterBillsByLastUpdated(since, until))
+            foreach (dynamic bill in this.oireachtasService.FilterBillsByLastUpdated(since, until))
             {
                 received.Add(bill["billNo"].ToString());
             }

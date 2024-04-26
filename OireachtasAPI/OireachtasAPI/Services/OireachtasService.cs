@@ -1,19 +1,23 @@
 ﻿using OireachtasAPI.Repositories;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace OireachtasAPI.Services
 {
-    public class OireachtasService
+    public class OireachtasService : IOireachtasService
     {
         private readonly IOireachtasRepository repository;
+        private readonly ILogger logger;
 
-        public OireachtasService(IOireachtasRepository repository)
+        public OireachtasService(IOireachtasRepository repository, ILogger logger)
         {
             this.repository = repository;
+            this.logger = logger;
         }
 
         /// <summary>
@@ -23,6 +27,7 @@ namespace OireachtasAPI.Services
         /// <returns>List of bill records</returns>
         public List<dynamic> FilterBillsSponsoredBy(string pId)
         {
+            this.logger.Information("Filtering Bills SponsoredBy {pId}", pId);
             dynamic leg = this.repository.GetLegislationData();
             dynamic mem = this.repository.GetMembersData();
 
@@ -33,6 +38,9 @@ namespace OireachtasAPI.Services
                 .ToDictionary(
                     member => (string)member["member"]["fullName"],
                     member => (string)member["member"]["pId"]);
+
+            int memberCount = memberDictionary.Count;
+            this.logger.Debug("member dictionary has {MemberCount} objects", memberCount);
 
             List<dynamic> ret = new List<dynamic>();
 
@@ -45,9 +53,14 @@ namespace OireachtasAPI.Services
                     if (!string.IsNullOrEmpty(sponsorName) && memberDictionary.TryGetValue(sponsorName, out string memberId) && memberId == pId)
                     {
                         ret.Add(res["bill"]);
+                    }else
+                    {
+                        this.logger.Warning("Data contains null sponsorNames");
                     }
                 }
             }
+
+            this.logger.Information("FilterBillsSponsoredBy succesfully completed.");
             return ret;
         }
 
@@ -59,6 +72,8 @@ namespace OireachtasAPI.Services
         /// <returns>List of bill records</returns>
         public List<dynamic> FilterBillsByLastUpdated(DateTime since, DateTime until)
         {
+            this.logger.Information("Filtering Bills between {since} and {until}", since, until);
+
             dynamic leg = this.repository.GetLegislationData();
 
             List<dynamic> ret = new List<dynamic>();
@@ -72,6 +87,8 @@ namespace OireachtasAPI.Services
                     ret.Add(p);
                 }
             }
+
+            this.logger.Information("FilterBillsByLastUpdated succesfully completed.");
             return ret;
         }
     }
