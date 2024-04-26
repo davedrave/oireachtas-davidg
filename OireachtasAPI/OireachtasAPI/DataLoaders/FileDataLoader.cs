@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -16,7 +17,10 @@ namespace OireachtasAPI.DataLoaders
         /// <inheritdoc/>
         public dynamic Load(string source)
         {
-            return JsonConvert.DeserializeObject((new System.IO.StreamReader(source)).ReadToEnd());
+            using(StreamReader streamReader = new System.IO.StreamReader(source))
+            {
+                return JsonConvert.DeserializeObject(streamReader.ReadToEnd());
+            }
         }
     }
 }
