@@ -128,7 +128,7 @@ namespace OireachtasAPI
                         else
                         {
                             Console.WriteLine("DateTo bypassed.");
-                            dateTo = DateTime.Now;
+                            dateTo = DateTime.Today;
                         }
                     }
 
@@ -172,7 +172,7 @@ namespace OireachtasAPI
 
                         if (!DateTime.TryParse(parameters.DateUntil, cultureInfo, DateTimeStyles.None, out DateTime dateUntil))
                         {
-                            dateUntil = DateTime.Now;
+                            dateUntil = DateTime.Today;
                         }
 
                         //TODO Exception 

@@ -26,22 +26,25 @@ namespace OireachtasAPI.Services
             dynamic leg = this.repository.GetLegislationData();
             dynamic mem = this.repository.GetMembersData();
 
+            IEnumerable<dynamic> memberResults = mem.results;
+
+            // Create a dictionary to map member names to their pId
+            Dictionary<string, string> memberDictionary = memberResults
+                .ToDictionary(
+                    member => (string)member["member"]["fullName"],
+                    member => (string)member["member"]["pId"]);
+
             List<dynamic> ret = new List<dynamic>();
 
             foreach (dynamic res in leg["results"])
             {
-                dynamic p = res["bill"]["sponsors"];
-                foreach (dynamic i in p)
+                dynamic sponsors = res["bill"]["sponsors"];
+                foreach (dynamic sponsor in sponsors)
                 {
-                    string name = i["sponsor"]["by"]["showAs"];
-                    foreach (dynamic result in mem["results"])
+                    string sponsorName = sponsor["sponsor"]["by"]["showAs"];
+                    if (!string.IsNullOrEmpty(sponsorName) && memberDictionary.TryGetValue(sponsorName, out string memberId) && memberId == pId)
                     {
-                        string fname = result["member"]["fullName"];
-                        string rpId = result["member"]["pId"];
-                        if (fname == name && rpId == pId)
-                        {
-                            ret.Add(res["bill"]);
-                        }
+                        ret.Add(res["bill"]);
                     }
                 }
             }
