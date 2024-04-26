@@ -15,7 +15,7 @@ namespace OireachtasAPI.DataLoaders
     /// <seealso cref="OireachtasAPI.DataLoaders.IDataLoader" />
     public class FileDataLoader : IDataLoader
     {
-        ILogger logger;
+        private readonly ILogger logger;
 
         public FileDataLoader(ILogger logger)
         {
@@ -24,19 +24,43 @@ namespace OireachtasAPI.DataLoaders
         /// <inheritdoc/>
         public dynamic Load(string source)
         {
-            using(StreamReader streamReader = new System.IO.StreamReader(source))
+            try
             {
-                string content = streamReader.ReadToEnd();
+                using (StreamReader streamReader = new System.IO.StreamReader(source))
+                {
+                    string content = streamReader.ReadToEnd();
 
-                if (!string.IsNullOrEmpty(content))
-                {
-                    logger.Debug(content.Substring(0, 25));
-                }else
-                {
-                    logger.Warning("Data from {Source} is empty", content);
+                    if (!string.IsNullOrEmpty(content))
+                    {
+                        logger.Debug(content.Substring(0, 25));
+                    }
+                    else
+                    {
+                        logger.Warning("Data from {Source} is empty", content);
+                    }
+
+                    return JsonConvert.DeserializeObject(content);
                 }
-
-                return JsonConvert.DeserializeObject(content);
+            }
+            catch (IOException ex)
+            {
+                logger.Error(ex, "Error reading file from source {Source}", source);
+                throw;
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                logger.Error(ex, "Access denied reading file from source {Source}", source);
+                throw;
+            }
+            catch (JsonException ex)
+            {
+                logger.Error(ex, "Error deserializing JSON from file source {Source}", source);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error loading data from {Source}", source);
+                throw;
             }
         }
     }

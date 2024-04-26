@@ -27,41 +27,50 @@ namespace OireachtasAPI.Services
         /// <returns>List of bill records</returns>
         public List<dynamic> FilterBillsSponsoredBy(string pId)
         {
-            this.logger.Information("Filtering Bills SponsoredBy {pId}", pId);
-            dynamic leg = this.repository.GetLegislationData();
-            dynamic mem = this.repository.GetMembersData();
-
-            IEnumerable<dynamic> memberResults = mem.results;
-
-            // Create a dictionary to map member names to their pId
-            Dictionary<string, string> memberDictionary = memberResults
-                .ToDictionary(
-                    member => (string)member["member"]["fullName"],
-                    member => (string)member["member"]["pId"]);
-
-            int memberCount = memberDictionary.Count;
-            this.logger.Debug("member dictionary has {MemberCount} objects", memberCount);
-
-            List<dynamic> ret = new List<dynamic>();
-
-            foreach (dynamic res in leg["results"])
+            try
             {
-                dynamic sponsors = res["bill"]["sponsors"];
-                foreach (dynamic sponsor in sponsors)
+                this.logger.Information("Filtering Bills SponsoredBy {pId}", pId);
+                dynamic leg = this.repository.GetLegislationData();
+                dynamic mem = this.repository.GetMembersData();
+
+                IEnumerable<dynamic> memberResults = mem.results;
+
+                // Create a dictionary to map member names to their pId
+                Dictionary<string, string> memberDictionary = memberResults
+                    .ToDictionary(
+                        member => (string)member["member"]["fullName"],
+                        member => (string)member["member"]["pId"]);
+
+                int memberCount = memberDictionary.Count;
+                this.logger.Debug("member dictionary has {MemberCount} objects", memberCount);
+
+                List<dynamic> ret = new List<dynamic>();
+
+                foreach (dynamic res in leg["results"])
                 {
-                    string sponsorName = sponsor["sponsor"]["by"]["showAs"];
-                    if (!string.IsNullOrEmpty(sponsorName) && memberDictionary.TryGetValue(sponsorName, out string memberId) && memberId == pId)
+                    dynamic sponsors = res["bill"]["sponsors"];
+                    foreach (dynamic sponsor in sponsors)
                     {
-                        ret.Add(res["bill"]);
-                    }else
-                    {
-                        this.logger.Warning("Data contains null sponsorNames");
+                        string sponsorName = sponsor["sponsor"]["by"]["showAs"];
+                        if (!string.IsNullOrEmpty(sponsorName) && memberDictionary.TryGetValue(sponsorName, out string memberId) && memberId == pId)
+                        {
+                            ret.Add(res["bill"]);
+                        }
+                        else
+                        {
+                            this.logger.Warning("Data contains null sponsorNames");
+                        }
                     }
                 }
-            }
 
-            this.logger.Information("FilterBillsSponsoredBy succesfully completed.");
-            return ret;
+                this.logger.Information("FilterBillsSponsoredBy succesfully completed.");
+                return ret;
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "An error occurred while filtering bills sponsored by {pId}");
+                throw; 
+            }
         }
 
         /// <summary>
@@ -72,24 +81,32 @@ namespace OireachtasAPI.Services
         /// <returns>List of bill records</returns>
         public List<dynamic> FilterBillsByLastUpdated(DateTime since, DateTime until)
         {
-            this.logger.Information("Filtering Bills between {since} and {until}", since, until);
-
-            dynamic leg = this.repository.GetLegislationData();
-
-            List<dynamic> ret = new List<dynamic>();
-
-            foreach (dynamic res in leg["results"])
+            try
             {
-                dynamic p = res["bill"];
+                this.logger.Information("Filtering Bills between {since} and {until}", since, until);
 
-                if (p["lastUpdated"] >= since && p["lastUpdated"] <= until)
+                dynamic leg = this.repository.GetLegislationData();
+
+                List<dynamic> ret = new List<dynamic>();
+
+                foreach (dynamic res in leg["results"])
                 {
-                    ret.Add(p);
-                }
-            }
+                    dynamic p = res["bill"];
 
-            this.logger.Information("FilterBillsByLastUpdated succesfully completed.");
-            return ret;
+                    if (p["lastUpdated"] >= since && p["lastUpdated"] <= until)
+                    {
+                        ret.Add(p);
+                    }
+                }
+
+                this.logger.Information("FilterBillsByLastUpdated succesfully completed.");
+                return ret;
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "An error occurred while filtering bills by last updated date");
+                throw;
+            }
         }
     }
 }

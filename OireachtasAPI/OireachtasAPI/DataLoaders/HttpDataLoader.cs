@@ -1,12 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Serilog;
-using Serilog.Core;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http;
-using System.Security.Policy;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace OireachtasAPI.DataLoaders
@@ -17,32 +12,50 @@ namespace OireachtasAPI.DataLoaders
     /// <seealso cref="OireachtasAPI.DataLoaders.IDataLoader" />
     public class HttpDataLoader : IDataLoader
     {
-        ILogger logger;
+        private readonly ILogger logger;
 
         public HttpDataLoader(ILogger logger)
         {
-            this.logger = logger;
+            this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         /// <inheritdoc/>
         public dynamic Load(string source)
         {
-            using (var client = new HttpClient())
+            try
             {
-                var response = client.GetAsync(source).Result;
-                response.EnsureSuccessStatusCode();
-                string responseBody = response.Content.ReadAsStringAsync().Result;
-
-                if (!string.IsNullOrEmpty(responseBody))
+                using (HttpClient client = new HttpClient())
                 {
-                    logger.Debug(responseBody.Substring(0, 25));
-                }
-                else
-                {
-                    logger.Warning("Data from {ResponseBody} is empty", responseBody);
-                }
+                    HttpResponseMessage response = client.GetAsync(source).Result;
+                    response.EnsureSuccessStatusCode();
+                    string responseBody = response.Content.ReadAsStringAsync().Result;
 
-                return JsonConvert.DeserializeObject(responseBody);
+                    if (!string.IsNullOrEmpty(responseBody))
+                    {
+                        logger.Debug(responseBody.Substring(0, 25));
+                    }
+                    else
+                    {
+                        logger.Warning("Data from {ResponseBody} is empty", responseBody);
+                    }
+
+                    return JsonConvert.DeserializeObject(responseBody);
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                logger.Error(ex, "HTTP request failed for source {Source}", source);
+                throw;
+            }
+            catch (TaskCanceledException ex)
+            {
+                logger.Error(ex, "HTTP request timed out for source {Source}", source);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error loading data from {Source}", source);
+                throw;
             }
         }
     }
