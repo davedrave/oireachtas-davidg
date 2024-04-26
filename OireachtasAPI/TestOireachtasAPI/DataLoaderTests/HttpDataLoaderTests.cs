@@ -41,11 +41,10 @@ namespace TestOireachtasAPI.DataLoaderTests
         [TestMethod]
         public void Load_ValidFile_LoadsValidData()
         {
-            HttpDataLoader fileDataLoader = new HttpDataLoader();
-
+            HttpDataLoader dataLoader = new HttpDataLoader();
 
             //TODO need to revise validation criteria here as a count comparison isnt a true test of validity
-            dynamic loaded = fileDataLoader.Load(DataPaths.ApiMembers);
+            dynamic loaded = dataLoader.Load(DataPaths.ApiMembers);
             Assert.AreEqual(loaded["results"].Count, expected["results"].Count);
         }
 
